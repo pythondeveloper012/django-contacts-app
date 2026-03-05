@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Contacts App — Frontend</title>
+<style>
+:root{
+  --bg:#0f172a; --card:#0b1220; --muted:#94a3b8; --accent:#06b6d4; --accent-2:#7c3aed;
+  --glass: rgba(255,255,255,0.04); --radius:12px;
+  font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+}
+*{box-sizing:border-box}
+body{margin:0; min-height:100vh; background:linear-gradient(180deg,#071028 0%,#021226 100%); color:#e6eef7; padding:20px;}
+.app{max-width:1100px;margin:18px auto; display:grid; grid-template-columns:320px 1fr; gap:20px;}
+@media(max-width:880px){.app{grid-template-columns:1fr; padding-bottom:60px}}
+.side-card{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01)); border-radius:var(--radius); padding:18px; box-shadow:0 8px 30px rgba(2,6,23,0.6); border:1px solid rgba(255,255,255,0.03);}
+.brand{display:flex; gap:12px; align-items:center; margin-bottom:12px;}
+.logo{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;font-weight:700;}
+h1{font-size:18px;margin:0;} p.lead{margin:6px 0 12px;color:var(--muted);font-size:13px;}
+.nav-list{display:flex; flex-direction:column; gap:8px;}
+.btn{background:transparent;border:0;padding:10px 12px;border-radius:10px;color:inherit;cursor:pointer;font-weight:600;}
+.btn:hover{background:rgba(255,255,255,0.02);}
+.primary{background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#001217;padding:10px 14px;border-radius:10px;border:0;}
+.danger{background:transparent;color:#ef4444;border:1px solid rgba(239,68,68,0.14);}
+.panel{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:18px; border-radius:var(--radius); box-shadow:0 10px 40px rgba(2,6,23,0.6); border:1px solid rgba(255,255,255,0.03); min-height:70vh;}
+input, textarea{background:var(--glass); border:1px solid rgba(255,255,255,0.03); padding:10px 12px; color:inherit; border-radius:10px; outline:none; width:100%;}
+input::placeholder{color:var(--muted);}
+.card-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;}
+.contact-card{background:linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0.01)); padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.02);}
+.muted{color:var(--muted);font-size:13px;}
+.small{font-size:12px;color:var(--muted);}
+.flex{display:flex;gap:8px;align-items:center;}
+.spacer{flex:1;}
+.modal-backdrop{position:fixed;inset:0;background:rgba(3,7,18,0.6);display:none;align-items:center;justify-content:center;padding:20px;z-index:1200;}
+.modal{background:#041022;padding:18px;border-radius:14px;width:100%;max-width:500px;box-shadow:0 10px 40px rgba(2,6,23,0.8);border:1px solid rgba(255,255,255,0.03);}
+.toast{position:fixed;right:18px;bottom:20px;background:#05202a;padding:12px 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);}
+.hidden{display:none;}
+.center{display:flex;align-items:center;justify-content:center;}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="side-card side">
+    <div class="brand">
+      <div class="logo">CT</div>
+      <div>
+        <h1>Contacts App</h1>
+        <p class="lead">Login/Register + Contacts CRUD</p>
+      </div>
+    </div>
+    <div class="nav-list">
+      <button class="btn" id="nav-login">Login</button>
+      <button class="btn" id="nav-register">Register</button>
+      <hr style="border:none;border-top:1px solid rgba(255,255,255,0.03);margin:8px 0">
+      <button class="btn" id="nav-contacts">Contacts</button>
+      <button class="btn danger" id="btn-logout">Logout</button>
+      <div class="muted small" style="margin-top:10px">Logged in as <span id="user-email">Not logged in</span></div>
+      <button class="primary" id="btn-new-contact" style="margin-top:10px;">+ New Contact</button>
+    </div>
+  </nav>
+
+  <main class="panel">
+    <!-- Login View -->
+    <div id="view-login" class="view hidden">
+      <h2>Login</h2>
+      <input id="login-username" type="text" placeholder="username/email"><br><br>
+      <input id="login-password" type="password" placeholder="password"><br><br>
+      <button id="login-submit" class="primary">Login</button>
+      <button id="goto-register" class="btn">Register instead</button>
+      <p id="login-error" class="muted small"></p>
+    </div>
+
+    <!-- Register View -->
+    <div id="view-register" class="view hidden">
+      <h2>Register</h2>
+      <input id="reg-username" type="text" placeholder="username"><br><br>
+      <input id="reg-email" type="email" placeholder="email"><br><br>
+      <input id="reg-password" type="password" placeholder="password"><br><br>
+      <button id="reg-submit" class="primary">Register</button>
+      <button id="goto-login" class="btn">Back to login</button>
+      <p id="reg-error" class="muted small"></p>
+    </div>
+
+    <!-- Contacts View -->
+    <div id="view-contacts" class="view hidden">
+      <h2>Contacts</h2>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+        <input id="filter-name" type="text" placeholder="Search name">
+        <input id="filter-phone" type="text" placeholder="Search phone">
+        <input id="filter-email" type="text" placeholder="Search email">
+        <button id="do-search" class="btn">Search</button>
+        <button id="clear-search" class="btn">Clear</button>
+      </div>
+      <div id="contacts-list" class="card-list"></div>
+      <div id="contacts-empty" class="muted center hidden">No contacts found</div>
+    </div>
+  </main>
+</div>
+
+<!-- Modal for Add/Edit -->
+<div id="modal-backdrop" class="modal-backdrop">
+  <div class="modal">
+    <h3 id="modal-title">New Contact</h3>
+    <label>Name</label>
+    <input id="c-name" type="text" placeholder="Full name"><br><br>
+    <label>Phone</label>
+    <input id="c-phone" type="tel" placeholder="03001234567"><br><br>
+    <label>Email</label>
+    <input id="c-email" type="email" placeholder="person@example.com"><br><br>
+    <label>Category</label>
+    <input id="c-category" type="text" placeholder="friend/work/family"><br><br>
+    <label>Address</label>
+    <textarea id="c-address" rows="3" placeholder="Address"></textarea><br>
+    <div style="display:flex; gap:8px; margin-top:8px;">
+      <div class="spacer"></div>
+      <button id="modal-cancel" class="btn">Cancel</button>
+      <button id="modal-save" class="primary">Save</button>
+    </div>
+    <p id="modal-error" class="muted small"></p>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script>
+const API_BASE="http://127.0.0.1:8000";
+const $=s=>document.querySelector(s);
+const $$=s=>Array.from(document.querySelectorAll(s));
+function show(el){el.classList.remove('hidden');}
+function hide(el){el.classList.add('hidden');}
+function toastMsg(msg){const t=$('#toast'); t.textContent=msg; show(t); setTimeout(()=>hide(t),3000);}
+function saveTokens(a,r){localStorage.setItem('access',a); localStorage.setItem('refresh',r);}
+function clearTokens(){localStorage.removeItem('access'); localStorage.removeItem('refresh');}
+function getAccess(){return localStorage.getItem('access');}
+function setUserEmail(email){$('#user-email').textContent=email||'Not logged in';}
+
+let currentEditId = null;
+
+/* ======== Auth ======== */
+async function handleRegister(){
+  const username=$('#reg-username').value.trim();
+  const email=$('#reg-email').value.trim();
+  const password=$('#reg-password').value;
+  if(!username||!email||!password){$('#reg-error').textContent='Fill all fields'; return;}
+  $('#reg-error').textContent='';
+  try{
+    const res=await fetch(API_BASE+'/api/register/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,email,password})});
+    const data=await res.json();
+    if(res.ok){toastMsg('Registered. Login now.'); $('#goto-login').click();}
+    else{$('#reg-error').textContent=JSON.stringify(data);}
+  }catch(e){$('#reg-error').textContent='Network error: '+e.message;}
+}
+
+async function handleLogin(){
+  const username=$('#login-username').value.trim();
+  const password=$('#login-password').value;
+  if(!username||!password){$('#login-error').textContent='Enter username/email and password'; return;}
+  $('#login-error').textContent='';
+  try{
+    const res=await fetch(API_BASE+'/api/token/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
+    const data=await res.json();
+    if(res.ok){saveTokens(data.access,data.refresh); toastMsg('Login successful'); setUserEmail(username); show($('#view-contacts')); hide($('#view-login')); loadContacts();} 
+    else{$('#login-error').textContent=data.detail||'Login failed';}
+  }catch(e){$('#login-error').textContent='Network error: '+e.message;}
+}
+
+/* ======== Contacts CRUD ======== */
+async function authFetch(url, options={}, retry=true){
+  options.headers = options.headers || {};
+  const token = getAccess();
+  if(token) options.headers['Authorization']='Bearer '+token;
+  if(!options.headers['Content-Type'] && !(options.body instanceof FormData)) options.headers['Content-Type']='application/json';
+  const res=await fetch(url, options);
+  if(res.status===401 && retry){ clearTokens(); setUserEmail('Not logged in'); toastMsg('Session expired. Login again.'); show($('#view-login')); hide($('#view-contacts')); }
+  return res;
+}
+
+async function loadContacts(){
+  $('#contacts-list').innerHTML='Loading...';
+  $('#contacts-empty').classList.add('hidden');
+  const name=encodeURIComponent($('#filter-name').value.trim());
+  const phone=encodeURIComponent($('#filter-phone').value.trim());
+  const email=encodeURIComponent($('#filter-email').value.trim());
+  let q='?';
+  if(name) q+='name='+name+'&';
+  if(phone) q+='phone='+phone+'&';
+  if(email) q+='email='+email+'&';
+  const url=API_BASE+'/api/contacts/'+(q==='?'?'':q);
+  try{
+    const res=await authFetch(url,{method:'GET'});
+    if(!res.ok){$('#contacts-list').innerHTML='Error loading contacts'; return;}
+    const list=await res.json();
+    renderContacts(list);
+  }catch(e){$('#contacts-list').innerHTML='Error: '+e.message;}
+}
+
+function renderContacts(list){
+  const container=$('#contacts-list');
+  container.innerHTML='';
+  if(!Array.isArray(list)||list.length===0){$('#contacts-empty').classList.remove('hidden'); return;}
+  list.forEach(item=>{
+    const card=document.createElement('div');
+    card.className='contact-card';
+    card.innerHTML=`
+      <h3>${item.name}</h3>
+      <div class="muted">${item.category} • ${new Date(item.created_at||Date.now()).toLocaleString()}</div>
+      <div class="small">Email: ${item.email||'-'}<br>Phone: ${item.phone||'-'}</div>
+      <div class="flex" style="margin-top:8px;">
+        <button class="btn edit-btn" data-id="${item.id}">Edit</button>
+        <button class="btn danger del-btn" data-id="${item.id}">Delete</button>
+        <div class="spacer"></div>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+  container.querySelectorAll('.edit-btn').forEach(b=>b.onclick=e=>openEdit(e.target.dataset.id));
+  container.querySelectorAll('.del-btn').forEach(b=>b.onclick=e=>deleteContact(e.target.dataset.id));
+}
+
+function openModal(mode='new'){ $('#modal-title').textContent = mode==='new'?'New Contact':'Edit Contact'; $('#modal-error').textContent=''; $('#modal-backdrop').style.display='flex'; }
+function closeModal(){ $('#modal-backdrop').style.display='none'; currentEditId=null; ['c-name','c-phone','c-email','c-category','c-address'].forEach(id=>$( '#' + id ).value=''); }
+
+async function openEdit(id){
+  try{
+    const res=await authFetch(API_BASE+'/api/contacts/'+id+'/',{method:'GET'});
+    const data=await res.json();
+    $('#c-name').value=data.name||''; $('#c-phone').value=data.phone||''; $('#c-email').value=data.email||''; $('#c-category').value=data.category||''; $('#c-address').value=data.address||'';
+    currentEditId=id; openModal('edit');
+  }catch(e){toastMsg('Cannot load contact: '+e.message);}
+}
+
+async function saveContact(){
+  const name=$('#c-name').value.trim();
+  const phone=$('#c-phone').value.trim();
+  if(!name||!phone){$('#modal-error').textContent='Name and Phone required'; return;}
+  const body=JSON.stringify({
+    name, phone, email:$('#c-email').value.trim(), category:$('#c-category').value.trim(), address:$('#c-address').value.trim()
+  });
+  try{
+    let res;
+    if(currentEditId){ res=await authFetch(API_BASE+'/api/contacts/'+currentEditId+'/',{method:'PATCH',body}); }
+    else{ res=await authFetch(API_BASE+'/api/contacts/',{method:'POST',body}); }
+    if(!res.ok){ const e=await res.json(); $('#modal-error').textContent=JSON.stringify(e); return; }
+    toastMsg(currentEditId?'Contact updated':'Contact created'); closeModal(); loadContacts();
+  }catch(e){$('#modal-error').textContent='Network error: '+e.message;}
+}
+
+async function deleteContact(id){
+  if(!confirm('Are you sure you want to delete?')) return;
+  try{
+    const res=await authFetch(API_BASE+'/api/contacts/'+id+'/',{method:'DELETE'});
+    if(res.status===204||res.ok){ toastMsg('Deleted'); loadContacts(); }
+    else{ const e=await res.text(); toastMsg('Delete failed: '+e); }
+  }catch(e){toastMsg('Error: '+e.message);}
+}
+
+/* ===== Wire up ===== */
+document.addEventListener('DOMContentLoaded',()=>{
+  $('#reg-submit').onclick=handleRegister;
+  $('#login-submit').onclick=handleLogin;
+  $('#goto-login').onclick=()=>{show($('#view-login')); hide($('#view-register'))}
+  $('#goto-register').onclick=()=>{show($('#view-register')); hide($('#view-login'))}
+  $('#nav-login').onclick=()=>{show($('#view-login')); hide($('#view-register')); hide($('#view-contacts'))}
+  $('#nav-register').onclick=()=>{show($('#view-register')); hide($('#view-login')); hide($('#view-contacts'))}
+  $('#nav-contacts').onclick=()=>{show($('#view-contacts')); hide($('#view-login')); hide($('#view-register')); loadContacts();}
+  $('#btn-logout').onclick=()=>{clearTokens(); toastMsg('Logged out'); setUserEmail('Not logged in'); show($('#view-login')); hide($('#view-contacts')); hide($('#view-register'))}
+  $('#btn-new-contact').onclick=()=>{currentEditId=null; openModal('new');};
+  $('#modal-cancel').onclick=closeModal;
+  $('#modal-save').onclick=saveContact;
+  $('#do-search').onclick=loadContacts;
+  $('#clear-search').onclick=()=>{$('#filter-name').value=''; $('#filter-phone').value=''; $('#filter-email').value=''; loadContacts();}
+  $('#nav-login').click();
+});
+</script>
+</body>
+</html>
